@@ -1,5 +1,4 @@
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,6 +17,23 @@ public class NFA {
             sigma = new ArrayList<>();
             accept_states = new ArrayList<>();
             states = new ArrayList<>();
+        }
+
+        public boolean testString(String line) {
+            int result = stateChange(line, 0, init_state);
+            return accept_states.contains(result);
+        }
+
+        public int stateChange(String line, int index, int last_state) {
+            if (index >= line.length()) {
+                return last_state;
+            } else {
+                if (sigma.contains(line.charAt(index))) {
+                    return stateChange(line, index + 1, states.get(last_state).get(sigma.indexOf(line.charAt(index))));
+                } else {
+                    return -1;
+                }
+            }
         }
 
         public String toString() {
@@ -55,6 +71,7 @@ public class NFA {
         int init_state;
         ArrayList<ArrayList<ArrayList<Integer>>> states;
         ArrayList<ArrayList<Integer>> dfaStates;
+
         public Finite_Alphabet_Non_Determinate() {
             sigma = new ArrayList<>();
             accept_states = new ArrayList<>();
@@ -71,16 +88,16 @@ public class NFA {
             dfaStates.add(first);
             allDFA = method2(allDFA, 0);
 
-            for(ArrayList<ArrayList<Integer>> lists : allDFA){
+            for (ArrayList<ArrayList<Integer>> lists : allDFA) {
                 ArrayList<Integer> sigmaDFAState = new ArrayList<>();
-                for(ArrayList<Integer> list: lists){
-                    sigmaDFAState.add(getIndex( list));
+                for (ArrayList<Integer> list : lists) {
+                    sigmaDFAState.add(getIndex(list));
                 }
                 dfa.states.add(sigmaDFAState);
             }
-            for(ArrayList<Integer> list: dfaStates){
-                for(Integer i: accept_states){
-                    if(list.contains(i)){
+            for (ArrayList<Integer> list : dfaStates) {
+                for (Integer i : accept_states) {
+                    if (list.contains(i)) {
                         dfa.accept_states.add(dfaStates.indexOf(list));
                     }
                 }
@@ -90,27 +107,25 @@ public class NFA {
         }
 
         private Integer getIndex(ArrayList<Integer> list) {
-            for(ArrayList<Integer> list1:dfaStates){
-                if(compareStateSets(list, list1)){
+            for (ArrayList<Integer> list1 : dfaStates) {
+                if (compareStateSets(list, list1)) {
                     return dfaStates.indexOf(list);
                 }
             }
             return 0;
         }
 
-        public ArrayList<ArrayList<ArrayList<Integer>>> method2(ArrayList<ArrayList<ArrayList<Integer>>> allDFA,  int index){
-            if(index >= dfaStates.size()){
+        public ArrayList<ArrayList<ArrayList<Integer>>> method2(ArrayList<ArrayList<ArrayList<Integer>>> allDFA, int index) {
+            if (index >= dfaStates.size()) {
                 return allDFA;
-            }
-            else {
+            } else {
                 allDFA.add(method(dfaStates.get(index)));
-                boolean test = false;
-                for (ArrayList<Integer> list2 : allDFA.get(allDFA.size()-1)) {
-                    if(!dfaStates.contains(list2)){
+                for (ArrayList<Integer> list2 : allDFA.get(allDFA.size() - 1)) {
+                    if (!dfaStates.contains(list2)) {
                         dfaStates.add(list2);
                     }
                 }
-                return method2(allDFA,index+1);
+                return method2(allDFA, index + 1);
             }
         }
 
@@ -123,7 +138,6 @@ public class NFA {
         }
 
 
-
         public ArrayList<Integer> buildSet(char sigmaChar, ArrayList<Integer> fromSet) {
             ArrayList<Integer> temp = new ArrayList<>();
             for (Integer i : fromSet) {
@@ -133,8 +147,7 @@ public class NFA {
                     }
                 }
             }
-            ArrayList<Integer> temp2 = new ArrayList<>();
-            temp2.addAll(temp);
+            ArrayList<Integer> temp2 = new ArrayList<>(temp);
             boolean added;
             do {
                 added = false;
@@ -147,10 +160,7 @@ public class NFA {
                         }
                     }
                 }
-                if(!added){
-                    break;
-                }
-            }while(true);
+            } while (added);
             temp2.sort(Integer::compareTo);
             return temp2;
         }
@@ -215,6 +225,7 @@ public class NFA {
         System.out.println(nfa.toString());
         nfa.toDFA();
         System.out.println(dfa.toString());
+        readText(args[1]);
     }
 
     public static void readNFA(String nfaFile) {
@@ -224,9 +235,9 @@ public class NFA {
             String line = br.readLine();
             String[] tokens = line.split("\\s");
 
-            for (int i = 0; i < tokens.length; i++) {
-                if (tokens[i].length() > 0) {
-                    nfa.sigma.add(tokens[i].charAt(0));
+            for (String token : tokens) {
+                if (token.length() > 0) {
+                    nfa.sigma.add(token.charAt(0));
                 }
             }
 
@@ -268,14 +279,34 @@ public class NFA {
 
                 }
             }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            br.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static void readText(String textFile) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(textFile));
+            String line;
+            int count = 0;
+            System.out.printf("Parsing Results of strings in %s:\n", textFile);
+            while (br.ready()) {
+                line = br.readLine();
+                count++;
+                if (dfa.testString(line)) {
+                    System.out.print("Yes\t");
+                } else {
+                    System.out.print("No\t");
+                }
+                if ((count % 15) == 0) {
+                    System.out.print("\n");
+                }
 
+            }
+            br.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
